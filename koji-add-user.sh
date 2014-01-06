@@ -29,21 +29,35 @@ esac
 
 user=$1
 
+echo "BREAK 1"
+
 echo "Becoming root..."
-cd /heroes/u1/jgr68/koji
+certdir=~/koji
+cd $certdir
+
+echo "BREAK 2"
+
+echo "Current user $(whoami)"
 
 echo "Generating a new key..."
+# error here
 openssl genrsa -out certs/${user}.key 2048
+
+echo "BREAK 3"
 
 echo "Creating certificate..."
 openssl req -config ssl.cnf -new -nodes -out certs/${user}.csr -key certs/${user}.key
+
+echo "BREAK 4"
+
+echo $certdir
 
 echo "Copying certificates..."
 openssl ca -config ssl.cnf -keyfile private/koji_ca_cert.key -cert koji_ca_cert.crt -out certs/${user}.crt -outdir certs -infiles certs/${user}.csr
 cat certs/${user}.crt certs/${user}.key > ${user}.pem
 cp ${user}.pem /heroes/u1/$1/.fedora.cert
-cp koji_ca_cert /heroes/u1/$1/.fedora-upload-ca.cert
-cp koji_ca_cert /heroes/u1/$1/.fedora-server-ca.cert
+cp $certdir/koji_ca_cert /heroes/u1/$1/.fedora-upload-ca.cert
+cp $certdir/koji_ca_cert /heroes/u1/$1/.fedora-server-ca.cert
 
 echo "Complete. You now have three certificates in your home directory:"
 echo -e "\t/heroes/u1/$1/.fedora.cert"
