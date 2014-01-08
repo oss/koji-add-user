@@ -5,71 +5,74 @@
 set -e
 
 # Set us some variables for use later
-BASEDIR="$HOMEDIR/kds124/koji"
+BASEDIR="/etc/pki/koji"
 CERTDIR="$BASEDIR/certs"
 HOMEDIR="/heroes/u1"
+PGM="koji-add-user"
 
 # Sanity checks
 if [ $# -ne 1 ]; then
     # Number of arguments is not equal to 1
-    echo "koji-add-user: Error: Exactly one argument expected."
+    echo "$PGM: Error: Exactly one argument expected."
     exit 1
 elif [ $HOSTNAME != "omachi.rutgers.edu" ]; then
-    echo "koji-add-user: This script should only be done on omachi."
+    echo "$PGM: This script should only be done on omachi."
     exit 1
 elif [ $USER != "root" ]; then
-    echo "koji-add-user: Run this script as root."
+    echo "$PGM: Run this script as root."
+    exit 1
+elif [ ! -d $BASEDIR ]; then
+    echo "$PGM: Fatal: The directory $BASEDIR doesn't exist."
     exit 1
 fi
 
-case $1 in
+# Store the name of the new user - for clarity
+NEWUSER=$1
+
+case $NEWUSER in
     --help|-h|help)
         # Invoking help
-        echo "Usage: koji-add-user <user>"
+        echo "Usage: $PGM <user>"
         echo "This should be run as someone with Koji admin access."
         exit 0
         ;;
     root)
-        # Someone did `koji-add-user root`
+        # Someone did `$PGM root`
         echo "Warning: Why are you adding root to Koji? Exiting."
-        exit 0
+        exit 1
         ;;
     *)
         # Check to make sure the user exists
-        if ! id $1 > /dev/null 2>&1 ; then
-            echo "koji-add-user: Error: User $1 does not exist."
+        if ! id $NEWUSER > /dev/null 2>&1 ; then
+            echo "$PGM: Error: User $NEWUSER does not exist."
             exit 1
-        elif [ ! -d $HOMEDIR/$1 ]; then
-            echo "koji-add-user: Error: User $1 doesn't have a home directory."
+        elif [ ! -d $HOMEDIR/$NEWUSER ]; then
+            echo "$PGM: Error: User $NEWUSER doesn't have a home directory."
             exit 1
         fi
         ;;
 esac
 
-# Store the name of the new user - for clarity
-NEWUSER=$1
-
 # Do the actual adding
 # This is based off of Fedora docs and our OSS Wiki documentation
-echo "Generating a new key..."
+cd $BASEDIR
 openssl genrsa -out $BASEDIR/certs/$NEWUSER.key 2048
 
 echo "Creating certificate..."
 openssl req -config $BASEDIR/ssl.cnf -new -nodes -out $BASEDIR/certs/$NEWUSER.csr -key $BASEDIR/certs/$NEWUSER.key
-
-echo "Copying certificates..."
 openssl ca -config $BASEDIR/ssl.cnf -keyfile $BASEDIR/private/koji_ca_cert.key -cert $BASEDIR/koji_ca_cert.crt -out $CERTDIR/$NEWUSER.crt -outdir $CERTDIR -infiles $CERTDIR/$NEWUSER.csr
 cat $CERTDIR/$NEWUSER.crt $CERTDIR/$NEWUSER.key > $BASEDIR/$NEWUSER.pem
 
 # Copy the certificates in the certificate directory to their home directory
-cp $BASEDIR/$NEWUSER.pem $HOMEDIR/$1/.fedora.cert
-cp $BASEDIR/koji_ca_cert $HOMEDIR/$1/.fedora-upload-ca.cert
-cp $BASEDIR/koji_ca_cert $HOMEDIR/$1/.fedora-server-ca.cert
+echo "Copying certificates..."
+cp $BASEDIR/$NEWUSER.pem $HOMEDIR/$NEWUSER/.fedora.cert
+cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-upload-ca.cert
+cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-server-ca.cert
 
-echo "Complete. You now have three certificates in your home directory:"
-echo -e "\t$HOMEDIR/$1/.fedora.cert"
-echo -e "\t$HOMEDIR/$1/.fedora-upload-ca.cert"
-echo -e "\t$HOMEDIR/$1/.fedora-server-ca.cert"
-echo "To use Koji on a build machine, copy these certificates there via scp."
-
-
+# Finally, some final instructions on installation
+echo -e "\nComplete. You now have three certificates in your home directory:"
+echo -e "\t$HOMEDIR/$NEWUSER/.fedora.cert"
+echo -e "\t$HOMEDIR/$NEWUSER/.fedora-upload-ca.cert"
+echo -e "\t$HOMEDIR/$NEWUSER/.fedora-server-ca.cert"
+echo "To use Koji on a build machine, copy these certificates there:"
+echo -e "\t$ scp $HOMEDIR/$NEWUSER/.fedora* $NEWUSER@opus3:~/."
