@@ -66,8 +66,18 @@ cat $CERTDIR/$NEWUSER.crt $CERTDIR/$NEWUSER.key > $BASEDIR/$NEWUSER.pem
 # Copy the certificates in the certificate directory to their home directory
 echo "Copying certificates..."
 cp $BASEDIR/$NEWUSER.pem $HOMEDIR/$NEWUSER/.fedora.cert
-cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-upload-ca.cert
-cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-server-ca.cert
+
+if [ -f $BASEDIR/koji_ca_cert ]; then
+    cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-upload-ca.cert
+    cp $BASEDIR/koji_ca_cert $HOMEDIR/$NEWUSER/.fedora-server-ca.cert
+elif [ -f $BASEDIR/koji_ca_cert.crt ]; then
+    cp $BASEDIR/koji_ca_cert.crt $HOMEDIR/$NEWUSER/.fedora-upload-ca.cert
+    cp $BASEDIR/koji_ca_cert.crt $HOMEDIR/$NEWUSER/.fedora-server-ca.cert
+else
+    echo "$PGM: Fatal: $BASEDIR/koji_ca_cert does not exist."
+    echo "To fix this, generate/find the certificate again, and then copy it to your home directory as ~/.fedora-upload-ca.cert and ~/.fedora-server-ca.cert."
+    exit 1
+fi
 
 # Finally, some final instructions on installation
 echo -e "\nComplete. You now have three certificates in your home directory:"
