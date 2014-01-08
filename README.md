@@ -15,6 +15,11 @@ This does several things:
 - Generates certificates.
 - Copies the certificates to the new user's home directory.
 
+Requires
+--------
+- koji
+- openssl
+
 Walkthrough
 -----------
 When creating the certificate, you'll be asked to enter some information that
