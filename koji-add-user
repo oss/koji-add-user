@@ -55,7 +55,7 @@ esac
 
 # Do the actual adding in Koji
 koji add-user $NEWUSER
-koji grant-permission admin $USER
+koji grant-permission admin $NEWUSER
 
 # This is based off of Fedora docs and our OSS Wiki documentation
 cd $BASEDIR
