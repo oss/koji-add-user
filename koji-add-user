@@ -53,7 +53,10 @@ case $NEWUSER in
         ;;
 esac
 
-# Do the actual adding
+# Do the actual adding in Koji
+koji add-user $NEWUSER
+koji grant-permission admin $USER
+
 # This is based off of Fedora docs and our OSS Wiki documentation
 cd $BASEDIR
 openssl genrsa -out $BASEDIR/certs/$NEWUSER.key 2048
