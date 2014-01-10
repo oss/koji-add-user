@@ -1,9 +1,6 @@
 #!/bin/bash
 # koji-add-user: Add a new user to Koji
 
-# Exit if a command fails
-set -e
-
 # Set us some variables for use later
 BASEDIR="/etc/pki/koji"
 CERTDIR="$BASEDIR/certs"
@@ -56,6 +53,9 @@ esac
 # Do the actual adding in Koji
 koji add-user $NEWUSER
 koji grant-permission admin $NEWUSER
+
+# Exit if a command fails
+set -e
 
 # This is based off of Fedora docs and our OSS Wiki documentation
 cd $BASEDIR
